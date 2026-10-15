@@ -1,0 +1,165 @@
+name: library-simple
+x-safe: &safe
+  restart: unless-stopped
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+services:
+  postgres:
+    image: postgres:16.9-alpine
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      POSTGRES_DB: library
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:?Run node setup.js}
+      DB_PASSWORD: ${DB_PASSWORD:?Run node setup.js}
+      EXPORTER_PASSWORD: ${EXPORTER_PASSWORD:?Run node setup.js}
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/db-init.sh:/docker-entrypoint-initdb.d/01-users.sh:ro
+    networks: [database]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d library']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  app:
+    <<: *safe
+    build: .
+    read_only: true
+    tmpfs: [/tmp]
+    environment:
+      DB_HOST: postgres
+      DB_USER: library_app
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: library
+      SESSION_SECRET: ${SESSION_SECRET:?Run node setup.js}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      LIBRARIAN_PASSWORD: ${LIBRARIAN_PASSWORD}
+      READER_PASSWORD: ${READER_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-library@example.com}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      LOG_FILE: /logs/app.log
+    volumes: [app-logs:/logs]
+    depends_on:
+      postgres: {condition: service_healthy}
+    networks: [frontend, database, monitoring, mail]
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  nginx:
+    <<: *safe
+    build: {context: ./infra, dockerfile: nginx.Dockerfile}
+    read_only: true
+    tmpfs: [/tmp]
+    ports: ['127.0.0.1:8080:8080']
+    volumes: [nginx-logs:/logs]
+    depends_on:
+      app: {condition: service_healthy}
+    networks: [frontend, monitoring]
+  pgadmin:
+    restart: unless-stopped
+    image: dpage/pgadmin4:9.6
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_LISTEN_PORT: 5050
+    ports: ['127.0.0.1:5050:5050']
+    volumes: [pgadmin-data:/var/lib/pgadmin]
+    networks: [database, management]
+    depends_on:
+      postgres: {condition: service_healthy}
+  mailpit:
+    <<: *safe
+    image: axllent/mailpit:v1.26.2
+    user: '1000:1000'
+    ports: ['127.0.0.1:8025:8025']
+    networks: [mail]
+  prometheus:
+    <<: *safe
+    image: prom/prometheus:v3.4.1
+    user: "65534:65534"
+    command: ['--config.file=/etc/prometheus/prometheus.yml','--storage.tsdb.path=/prometheus','--storage.tsdb.retention.time=7d']
+    ports: ['127.0.0.1:9090:9090']
+    volumes: ['./infra/prometheus.yml:/etc/prometheus/prometheus.yml:ro', 'prometheus-data:/prometheus']
+    networks: [monitoring, management]
+  grafana:
+    <<: *safe
+    image: grafana/grafana:12.0.3
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    ports: ['127.0.0.1:3001:3000']
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboard.json:/etc/grafana/dashboards/library.json:ro
+    networks: [monitoring, management]
+  loki:
+    <<: *safe
+    image: grafana/loki:3.5.1
+    command: ['-config.file=/etc/loki/config.yml']
+    volumes: ['./infra/loki.yml:/etc/loki/config.yml:ro', 'loki-data:/loki']
+    networks: [monitoring]
+  promtail:
+    <<: *safe
+    build: {context: ./infra, dockerfile: promtail.Dockerfile}
+    user: '10001:10001'
+    command: ['-config.file=/etc/promtail/config.yml']
+    volumes:
+      - ./infra/promtail.yml:/etc/promtail/config.yml:ro
+      - app-logs:/app-logs:ro
+      - nginx-logs:/nginx-logs:ro
+      - positions:/positions
+    networks: [monitoring]
+    depends_on: [loki]
+  nginx-exporter:
+    <<: *safe
+    image: nginx/nginx-prometheus-exporter:1.4.2
+    command: ['--nginx.scrape-uri=http://nginx:8081/stub_status']
+    networks: [monitoring]
+    depends_on: [nginx]
+  postgres-exporter:
+    <<: *safe
+    image: prometheuscommunity/postgres-exporter:v0.17.1
+    user: "65534:65534"
+    environment:
+      DATA_SOURCE_NAME: postgresql://metrics:${EXPORTER_PASSWORD}@postgres:5432/library?sslmode=disable
+    networks: [database, monitoring]
+    depends_on:
+      postgres: {condition: service_healthy}
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.2
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    command: ['--docker_only=true']
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    networks: [monitoring]
+networks:
+  frontend:
+  database: {internal: true}
+  monitoring: {internal: true}
+  management:
+  mail:
+volumes:
+  pgdata:
+  pgadmin-data:
+  app-logs:
+  nginx-logs:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+  positions:

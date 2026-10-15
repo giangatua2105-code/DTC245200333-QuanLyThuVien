@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#183f36" />
+    <title>LibraryHub · Quản lý thư viện</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div
+      id="notice"
+      class="toast"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+    <section id="authLayout" class="auth-layout">
+      <aside class="auth-story">
+        <a class="logo" href="/" aria-label="LibraryHub"
+          ><span class="logo-mark">L</span>LibraryHub<span class="logo-dot"
+            >.</span
+          ></a
+        >
+        <div class="story-copy">
+          <span class="eyebrow">KHÔNG GIAN CỦA TRI THỨC</span>
+          <h1>Mỗi cuốn sách,<br />một hành trình mới.</h1>
+          <p>
+            Khám phá kho sách, quản lý lượt mượn và kết nối với thư viện trong
+            một không gian đơn giản, thuận tiện.
+          </p>
+          <div class="story-tags">
+            <span>Kho sách trực tuyến</span><span>Mượn & trả dễ dàng</span>
+          </div>
+        </div>
+        <div class="shelf-art" aria-hidden="true">
+          <div class="shelf-row">
+            <i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <div class="shelf-row second">
+            <i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <span class="shelf-caption">ĐỌC · KHÁM PHÁ · KẾT NỐI</span>
+        </div>
+        <small class="story-footer"
+          >LibraryHub — Hệ thống quản lý thư viện</small
+        >
+      </aside>
+      <div class="auth-side">
+        <div class="auth-top">Chào mừng đến với thư viện của bạn</div>
+        <section id="auth"></section>
+        <div class="auth-bottom">
+          Dữ liệu được lưu trữ trong hệ thống thư viện.
+        </div>
+      </div>
+    </section>
+    <div id="shell" class="shell" hidden>
+      <aside class="sidebar">
+        <a class="logo" href="/"
+          ><span class="logo-mark">L</span>LibraryHub<span class="logo-dot"
+            >.</span
+          ></a
+        ><span class="nav-caption">KHÔNG GIAN LÀM VIỆC</span>
+        <nav id="nav" aria-label="Điều hướng chính"></nav>
+        <div class="sidebar-tip">
+          <span class="tip-icon">✦</span><strong>Một chút đọc mỗi ngày</strong>
+          <p>Theo dõi hạn trả để luôn sẵn sàng cho cuốn sách tiếp theo.</p>
+        </div>
+        <div id="identity"></div>
+      </aside>
+      <div class="main-area">
+        <header class="topbar">
+          <div>
+            <span class="top-label">THƯ VIỆN TRỰC TUYẾN</span
+            ><span id="breadcrumb">Tổng quan</span>
+          </div>
+          <div class="top-right">
+            <span class="live-dot"></span><span id="today"></span>
+          </div>
+        </header>
+        <main>
+          <section id="workspace">
+            <div class="heading">
+              <div>
+                <span class="eyebrow" id="pageLabel">THƯ VIỆN CỦA BẠN</span>
+                <h1 id="title"></h1>
+                <p id="subtitle"></p>
+              </div>
+              <button id="add" hidden>+ Thêm mới</button>
+            </div>
+            <div id="overview" hidden></div>
+            <div id="filters" class="toolbar"></div>
+            <div id="content"></div>
+            <div id="pagination" class="pagination"></div>
+          </section>
+          <footer>
+            LibraryHub <span>Quản lý gọn gàng. Đọc sách dễ dàng.</span>
+          </footer>
+        </main>
+      </div>
+    </div>
+    <dialog id="modal" aria-labelledby="modalTitle">
+      <form id="editor">
+        <div class="modal-heading">
+          <span class="eyebrow">LIBRARYHUB</span
+          ><button
+            type="button"
+            id="closeModal"
+            class="icon-button"
+            aria-label="Đóng"
+          >
+            ×
+          </button>
+        </div>
+        <h2 id="modalTitle"></h2>
+        <div id="fields"></div>
+        <p id="formError" class="error" role="alert"></p>
+        <div class="modal-actions">
+          <button type="button" id="cancel" class="secondary">Hủy</button
+          ><button type="submit" id="save">Lưu</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="confirmDialog" aria-labelledby="confirmTitle">
+      <div class="confirm-symbol">!</div>
+      <h2 id="confirmTitle">Xác nhận thao tác</h2>
+      <p id="confirmMessage"></p>
+      <div class="modal-actions">
+        <button id="confirmCancel" class="secondary">Hủy</button
+        ><button id="confirmOK">Xác nhận</button>
+      </div>
+    </dialog>
+    <script src="/app.js"></script>
+  </body>
+</html>

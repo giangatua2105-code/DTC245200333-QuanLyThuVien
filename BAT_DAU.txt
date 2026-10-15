@@ -1,0 +1,31 @@
+HỆ THỐNG QUẢN LÝ THƯ VIỆN — NODE.JS
+
+1. Mở Docker Desktop và đợi Docker hoạt động (Linux containers).
+2. Giải nén ZIP. Mở PowerShell tại thư mục LibrarySimple có compose.yaml.
+3. Tạo mật khẩu ngẫu nhiên (không cần cài Node.js trên máy):
+
+   docker run --rm -v "${PWD}:/work" -w /work node:22.16.0-alpine node setup.js
+
+4. Chạy toàn bộ hệ thống:
+
+   docker compose up -d --build
+
+5. Đợi khởi tạo xong, mở http://localhost:8080
+
+   Admin: admin@example.com / mật khẩu dòng ADMIN_PASSWORD trong .env
+   Thủ thư: thuthu@example.com / mật khẩu dòng LIBRARIAN_PASSWORD trong .env
+   Độc giả: docgia@example.com / mật khẩu dòng READER_PASSWORD trong .env
+
+   Chỉ sao chép phần sau dấu =.
+   Hoặc tự đăng ký tài khoản độc giả mới với mật khẩu ít nhất 10 ký tự.
+
+6. Quên mật khẩu: nhập email → mở http://localhost:8025 lấy mã →
+   chọn Tôi đã có mã đặt lại → nhập mã và mật khẩu mới.
+   Mailpit dùng để thử tại máy; không gửi Gmail thật.
+
+QUY TẮC NGÀY ĐÃ CHỐT: Hạn trả >= ngày mượn. Ngày trả thực tế tự ghi khi trả.
+
+README.md có hướng dẫn pgAdmin, Grafana, LogQL, GitHub và giữ dữ liệu.
+KIEM_THU.md ghi kết quả kiểm tra và phần Docker cần xác nhận trên máy bạn.
+Không chạy đè lên dự án cũ. Không đưa .env lên GitHub. Không dùng down -v
+nếu cần giữ dữ liệu.

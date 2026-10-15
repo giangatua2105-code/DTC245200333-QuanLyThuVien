@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Thư viện nhỏ</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        ▤ Thư viện nhỏ <small>Quản lý sách • Mượn & trả</small>
+      </div>
+      <div id="identity"></div>
+    </header>
+    <main>
+      <div id="notice" role="status"></div>
+      <section id="auth"></section>
+      <section id="workspace" hidden>
+        <nav id="nav"></nav>
+        <div class="heading">
+          <div>
+            <h1 id="title"></h1>
+            <p id="subtitle"></p>
+          </div>
+          <button id="add" hidden>+ Thêm mới</button>
+        </div>
+        <div id="filters"></div>
+        <div id="content"></div>
+      </section>
+    </main>
+    <dialog id="modal">
+      <form id="editor">
+        <h2 id="modalTitle"></h2>
+        <div id="fields"></div>
+        <div class="actions">
+          <button type="button" id="cancel" class="secondary">Hủy</button
+          ><button type="submit">Lưu</button>
+        </div>
+        <p id="formError" class="error"></p>
+      </form>
+    </dialog>
+    <footer>Hệ thống quản lý thư viện · Node.js + PostgreSQL</footer>
+    <script src="/app.js"></script>
+  </body>
+</html>
