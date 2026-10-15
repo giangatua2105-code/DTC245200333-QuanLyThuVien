@@ -138,10 +138,10 @@ services:
     depends_on:
       postgres: {condition: service_healthy}
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.2
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
-    command: ['--docker_only=true']
+    command:  ['--docker_only=true', '--disable_metrics=disk']
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
