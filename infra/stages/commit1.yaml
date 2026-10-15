@@ -1,0 +1,136 @@
+name: library-simple
+services:
+  postgres:
+    image: postgres:16.9-alpine
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    environment:
+      POSTGRES_DB: library
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:?Run node setup.js}
+      DB_PASSWORD: ${DB_PASSWORD:?Run node setup.js}
+      EXPORTER_PASSWORD: ${EXPORTER_PASSWORD:?Run node setup.js}
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+    - pgdata:/var/lib/postgresql/data
+    - ./infra/db-init.sh:/docker-entrypoint-initdb.d/01-users.sh:ro
+    networks:
+    - database
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U postgres -d library
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  app:
+    restart: unless-stopped
+    security_opt: &id001
+    - no-new-privileges:true
+    cap_drop: &id002
+    - ALL
+    build: .
+    read_only: true
+    tmpfs:
+    - /tmp
+    environment:
+      DB_HOST: postgres
+      DB_USER: library_app
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: library
+      SESSION_SECRET: ${SESSION_SECRET:?Run node setup.js}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      LIBRARIAN_PASSWORD: ${LIBRARIAN_PASSWORD}
+      READER_PASSWORD: ${READER_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-library@example.com}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      LOG_FILE: /logs/app.log
+    volumes:
+    - app-logs:/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+    - frontend
+    - database
+    - mail
+    healthcheck:
+      test:
+      - CMD
+      - node
+      - -e
+      - fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  nginx:
+    restart: unless-stopped
+    security_opt: *id001
+    cap_drop: *id002
+    build:
+      context: ./infra
+      dockerfile: nginx.Dockerfile
+    read_only: true
+    tmpfs:
+    - /tmp
+    ports:
+    - 127.0.0.1:8080:8080
+    volumes:
+    - nginx-logs:/logs
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+    - frontend
+  pgadmin:
+    restart: unless-stopped
+    security_opt: *id001
+    cap_drop: *id002
+    image: dpage/pgadmin4:9.5
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_LISTEN_PORT: 5050
+    ports:
+    - 127.0.0.1:5050:5050
+    volumes:
+    - pgadmin-data:/var/lib/pgadmin
+    networks:
+    - database
+    - management
+    depends_on:
+      postgres:
+        condition: service_healthy
+  mailpit:
+    restart: unless-stopped
+    security_opt: *id001
+    cap_drop: *id002
+    image: axllent/mailpit:v1.26.2
+    user: 1000:1000
+    ports:
+    - 127.0.0.1:8025:8025
+    networks:
+    - mail
+networks:
+  frontend: null
+  database:
+    internal: true
+  monitoring:
+    internal: true
+  management: null
+  mail: null
+volumes:
+  pgdata: null
+  pgadmin-data: null
+  app-logs: null
+  nginx-logs: null
+  prometheus-data: null
+  grafana-data: null
+  loki-data: null
+  positions: null
